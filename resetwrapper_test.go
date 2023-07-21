@@ -2,24 +2,22 @@ package safepool
 
 import "testing"
 
-type testObject struct {
+type testObjectNoReset struct {
 	Name string
 }
 
-func (t *testObject) ResetState() {
-	t.Name = ""
-}
-
-func TestPool(t *testing.T) {
-	sp := New(func() *testObject {
-		return &testObject{}
+func TestWrapper(t *testing.T) {
+	sp := New(func() *ResetWrapper[*testObject] {
+		return Wrap(&testObject{}, func(v *testObject) {
+			v.Name = ""
+		})
 	})
 
 	o1 := sp.Get()
 	o2 := sp.Get()
 
-	o1.Name = "object1"
-	o2.Name = "object2"
+	o1.Inner.Name = "object1"
+	o2.Inner.Name = "object2"
 
 	sp.Put(o1)
 	sp.Put(o2)
@@ -40,11 +38,11 @@ func TestPool(t *testing.T) {
 		t.Fatal("no new object was created")
 	}
 
-	if o3.Name != "" {
+	if o3.Inner.Name != "" {
 		t.Fatal("o1 has not been reset")
 	}
 
-	if o4.Name != "" {
+	if o4.Inner.Name != "" {
 		t.Fatal("o1 has not been reset")
 	}
 }
